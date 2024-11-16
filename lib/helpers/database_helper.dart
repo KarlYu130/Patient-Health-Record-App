@@ -201,4 +201,19 @@ class DatabaseHelper {
   }
 
   // Define CRUD operations here
+
+  Future<Patient?> getPatientById(int id) async {
+    final db = await instance.database;
+    final maps = await db.query(
+      'patients',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return Patient.fromMap(maps.first);
+    } else {
+      return null;
+    }
+  }
 }

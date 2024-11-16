@@ -5,6 +5,8 @@ import '../models/health_record.dart';
 import 'package:intl/intl.dart'; // Add this import
 import 'edit_health_record.dart'; // Add this import
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Add this import
+import '../helpers/database_helper.dart'; // Add this import
+import '../models/patient.dart'; // Import Patient model
 
 class HealthRecordDetail extends StatefulWidget {
   final HealthRecord record;
@@ -17,11 +19,21 @@ class HealthRecordDetail extends StatefulWidget {
 
 class _HealthRecordDetailState extends State<HealthRecordDetail> {
   late HealthRecord _record;
+  Patient? _patient; // Add Patient variable
 
   @override
   void initState() {
     super.initState();
     _record = widget.record;
+    _loadPatient(); // Load patient data
+  }
+
+  Future<void> _loadPatient() async {
+    final dbHelper = DatabaseHelper.instance;
+    Patient? patient = await dbHelper.getPatientById(_record.patientId); // Fetch patient
+    setState(() {
+      _patient = patient;
+    });
   }
 
   // Helper functions to determine normal ranges (reuse from patient_detail.dart)
@@ -87,7 +99,7 @@ class _HealthRecordDetailState extends State<HealthRecordDetail> {
       return 'No data available';
     } else if (systolic < 120 && diastolic < 80) {
       return 'Normal';
-    } else if (systolic >= 120 && systolic < 130 && diastolic < 80) {
+    } else if (systolic >= 120 && systolic < 130 && diastolic <= 80) {
       return 'Elevated';
     } else if ((systolic >= 130 && systolic < 140) ||
         (diastolic >= 80 && diastolic < 90)) {
@@ -156,8 +168,115 @@ class _HealthRecordDetailState extends State<HealthRecordDetail> {
     }
   }
 
+  // Add a method to calculate overall risk
+  double _calculateOverallRisk() {
+    double risk = 0;
+
+    // Example risk calculations based on health metrics
+    if (_record.bloodGlucoseLevel != null) {
+      if (_record.bloodGlucoseLevel! >= 200) {
+        risk += 40;
+      } else if (_record.bloodGlucoseLevel! >= 140) {
+        risk += 20;
+      }
+    }
+
+    if (_record.systolic != null && _record.diastolic != null) {
+      if (_record.systolic! >= 140 || _record.diastolic! >= 90) {
+        risk += 40;
+      } else if ((_record.systolic! >= 130 && _record.systolic! < 140) ||
+          (_record.diastolic! >= 80 && _record.diastolic! < 90)) {
+        risk += 20;
+      }
+    }
+
+    // Incorporate age
+    if (_patient?.age != null) {
+      if (_patient!.age > 50) {
+        risk += 20;
+      }
+    }
+
+    // Incorporate sex
+    if (_patient?.sex != null) {
+      if (_patient!.sex != null && _patient!.sex!.toLowerCase() == 'male') {
+        risk += 10;
+      }
+    }
+
+    return risk.clamp(0, 100);
+  }
+
+  // Add methods to calculate individual risks
+  double _calculateDiabetesRisk() {
+    double risk = 0;
+
+    if (_record.bloodGlucoseLevel != null) {
+      if (_record.bloodGlucoseLevel! >= 200) {
+        risk += 40;
+      } else if (_record.bloodGlucoseLevel! >= 140) {
+        risk += 20;
+      }
+    }
+
+    // Incorporate age
+    if (_patient?.age != null) {
+      if (_patient!.age > 50) {
+        risk += 10;
+      }
+    }
+
+    // Incorporate sex
+    if (_patient?.sex != null && _patient!.sex!.toLowerCase() == 'male') {
+      risk += 5;
+    }
+
+    return risk.clamp(0, 100);
+  }
+
+  double _calculateHypertensionRisk() {
+    double risk = 0;
+
+    if (_record.systolic != null && _record.diastolic != null) {
+      if (_record.systolic! >= 140 || _record.diastolic! >= 90) {
+        risk += 40;
+      } else if ((_record.systolic! >= 130 && _record.systolic! < 140) ||
+          (_record.diastolic! >= 80 && _record.diastolic! < 90)) {
+        risk += 20;
+      }
+    }
+
+    // Incorporate age
+    if (_patient?.age != null) {
+      if (_patient!.age > 50) {
+        risk += 10;
+      }
+    }
+
+    // Incorporate sex
+    if (_patient?.sex != null && _patient!.sex!.toLowerCase() == 'male') {
+      risk += 5;
+    }
+
+    return risk.clamp(0, 100);
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_patient == null) {
+      return Scaffold(
+        appBar: AppBar(
+          // ...existing code...
+        ),
+        body: Center(child: CircularProgressIndicator()), // Show loading indicator
+      );
+    }
+
+    double diabetesRisk = _calculateDiabetesRisk();
+    double hypertensionRisk = _calculateHypertensionRisk();
+
+    double overallRisk = _calculateOverallRisk();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)?.healthRecordDetails ?? 'Health Record Details'), // Updated
@@ -358,6 +477,117 @@ class _HealthRecordDetailState extends State<HealthRecordDetail> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
+                              '${AppLocalizations.of(context)?.diabetesRisk ?? 'Diabetes Risk'}: ${diabetesRisk}%',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: diabetesRisk > 70
+                                    ? Colors.red
+                                    : diabetesRisk > 40
+                                        ? Colors.orange
+                                        : Colors.green,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Hypertension Risk Assessment
+                      Row(
+                        children: [
+                          const Icon(Icons.warning, color: Colors.teal),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '${AppLocalizations.of(context)?.hypertensionRisk ?? 'Hypertension Risk'}: ${hypertensionRisk}%',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: hypertensionRisk > 70
+                                    ? Colors.red
+                                    : hypertensionRisk > 40
+                                        ? Colors.orange
+                                        : Colors.green,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      // Progress Circle Charts
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Diabetes Risk Circle
+                          Column(
+                            children: [
+                              Text(AppLocalizations.of(context)?.diabetesRisk ?? 'Diabetes Risk'),
+                              SizedBox(
+                                height: 150,
+                                width: 150,
+                                child: SfCircularChart(
+                                  series: <CircularSeries>[
+                                    RadialBarSeries<ChartData, String>(
+                                      dataSource: [
+                                        ChartData('Diabetes', diabetesRisk),
+                                      ],
+                                      xValueMapper: (ChartData data, _) => data.category,
+                                      yValueMapper: (ChartData data, _) => data.value,
+                                      maximumValue: 100,
+                                      pointColorMapper: (ChartData data, _) {
+                                        if (data.value > 70) {
+                                          return Colors.red;
+                                        } else if (data.value > 40) {
+                                          return Colors.orange;
+                                        } else {
+                                          return Colors.green;
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Hypertension Risk Circle
+                          Column(
+                            children: [
+                              Text(AppLocalizations.of(context)?.hypertensionRisk ?? 'Hypertension Risk'),
+                              SizedBox(
+                                height: 150,
+                                width: 150,
+                                child: SfCircularChart(
+                                  series: <CircularSeries>[
+                                    RadialBarSeries<ChartData, String>(
+                                      dataSource: [
+                                        ChartData('Hypertension', hypertensionRisk),
+                                      ],
+                                      xValueMapper: (ChartData data, _) => data.category,
+                                      yValueMapper: (ChartData data, _) => data.value,
+                                      maximumValue: 100,
+                                      pointColorMapper: (ChartData data, _) {
+                                        if (data.value > 70) {
+                                          return Colors.red;
+                                        } else if (data.value > 40) {
+                                          return Colors.orange;
+                                        } else {
+                                          return Colors.green;
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Diabetes Risk Assessment
+                      Row(
+                        children: [
+                          const Icon(Icons.warning, color: Colors.teal),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
                               '${AppLocalizations.of(context)?.diabetesRisk ?? 'Diabetes Risk'}: ${_getDiabetesRisk(_record.bloodGlucoseLevel)}',
                               style: TextStyle(
                                 fontSize: 18,
@@ -385,6 +615,54 @@ class _HealthRecordDetailState extends State<HealthRecordDetail> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Overall Risk Assessment
+                      Row(
+                        children: [
+                          const Icon(Icons.assessment, color: Colors.teal),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '${AppLocalizations.of(context)?.overallRisk ?? 'Overall Risk'}: $overallRisk%',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: overallRisk > 70
+                                    ? Colors.red
+                                    : overallRisk > 40
+                                        ? Colors.orange
+                                        : Colors.green,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      // Progress Circle Chart
+                      Center(
+                        child: SfCircularChart(
+                          title: ChartTitle(
+                              text: AppLocalizations.of(context)?.riskAssessment ?? 'Risk Assessment'),
+                          series: <CircularSeries>[
+                            RadialBarSeries<ChartData, String>(
+                              dataSource: [
+                                ChartData('Risk', overallRisk),
+                              ],
+                              xValueMapper: (ChartData data, _) => data.category,
+                              yValueMapper: (ChartData data, _) => data.value,
+                              maximumValue: 100,
+                              pointColorMapper: (ChartData data, _) {
+                                if (data.value > 70) {
+                                  return Colors.red;
+                                } else if (data.value > 40) {
+                                  return Colors.orange;
+                                } else {
+                                  return Colors.green;
+                                }
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -515,4 +793,12 @@ class _HealthRecordDetailState extends State<HealthRecordDetail> {
       ),
     );
   }
+}
+
+// Add a data model for the chart
+class ChartData {
+  final String category;
+  final double value;
+
+  ChartData(this.category, this.value);
 }

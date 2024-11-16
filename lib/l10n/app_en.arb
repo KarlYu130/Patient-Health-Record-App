@@ -62,5 +62,6 @@
   "cancel": "Cancel",
   "validOxygenLevel": "Please enter a valid oxygen level.",
   "validHeartRate": "Please enter a valid heart rate.",
-  "add": "Add"
+  "add": "Add",
+  "overallRisk": "Overall Risk"
 }
