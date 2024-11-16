@@ -92,8 +92,8 @@ class _AddHealthRecordState extends State<AddHealthRecord> {
                   TextFormField(
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)?.condition ?? 'Condition', // Updated
-                      prefixIcon: Icon(Icons.medical_services),
-                      border: OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.medical_services),
+                      border: const OutlineInputBorder(),
                     ),
                     onSaved: (value) {
                       _condition = value ?? '';

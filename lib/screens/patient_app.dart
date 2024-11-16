@@ -198,8 +198,8 @@ class _PatientAppState extends State<PatientApp> {
             _loadPatients();
           }
         },
-        child: const Icon(Icons.add),
-        tooltip: AppLocalizations.of(context)?.addPatient ?? 'Add Patient', // Updated
+        tooltip: AppLocalizations.of(context)?.addPatient ?? 'Add Patient',
+        child: const Icon(Icons.add), // Updated
       ),
     );
   }

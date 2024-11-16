@@ -45,7 +45,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
           ),
           ElevatedButton(
             onPressed: _scanFromGallery,
-            child: Text('Scan QR from Gallery'),
+            child: const Text('Scan QR from Gallery'),
           ),
           Expanded(
             flex: 1,

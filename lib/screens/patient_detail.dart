@@ -359,7 +359,7 @@ class _PatientDetailState extends State<PatientDetail> {
         ? Center(child: Text(AppLocalizations.of(context)?.noHealthRecordsAvailable ?? 'No health records available.')) // Updated
         : ListView.builder(
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: _healthRecords.length,
             itemBuilder: (context, index) {
               final record = _healthRecords[index];

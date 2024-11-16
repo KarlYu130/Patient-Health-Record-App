@@ -153,7 +153,7 @@ class _AiDoctorChatState extends State<AiDoctorChat> {
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker _picker = ImagePicker();
+    final ImagePicker picker = ImagePicker();
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -166,7 +166,7 @@ class _AiDoctorChatState extends State<AiDoctorChat> {
                 title: const Text('Pick from gallery'),
                 onTap: () async {
                   final XFile? pickedFile =
-                      await _picker.pickImage(source: ImageSource.gallery);
+                      await picker.pickImage(source: ImageSource.gallery);
                   if (pickedFile != null) {
                     await _sendImage(pickedFile.path);
                   }
@@ -178,7 +178,7 @@ class _AiDoctorChatState extends State<AiDoctorChat> {
                 title: const Text('Take a photo'),
                 onTap: () async {
                   final XFile? pickedFile =
-                      await _picker.pickImage(source: ImageSource.camera);
+                      await picker.pickImage(source: ImageSource.camera);
                   if (pickedFile != null) {
                     await _sendImage(pickedFile.path);
                   }
