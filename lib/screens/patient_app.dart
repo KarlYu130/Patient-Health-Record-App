@@ -73,7 +73,7 @@ class _PatientAppState extends State<PatientApp> {
     return Scaffold(
       // Remove MaterialApp from here
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.appTitle ?? 'SIGHT Patient Records'),
+        title: Text('AyuCheck'),
         actions: [
           // ...existing actions...
           PopupMenuButton<String>(
